@@ -9,7 +9,8 @@ export default function BotMessage({ message }) {
       </div>
       <div className="px-5 flex-1">
         <div className="font-bold text-black">ITC Agent</div>
-        <div style={{ fontFamily: "ShareTech" }}>{message}</div>
+        {/* <div style={{ fontFamily: "ShareTech" }}>{message}</div> */}
+        <div style={{ fontFamily: "Ubuntu" }}>{message}</div>
       </div>
     </div>
   );
