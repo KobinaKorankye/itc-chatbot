@@ -20,7 +20,7 @@ export default function MessageInput({
       >
         <div
           onClick={onAttachClick}
-          className="flex justify-center items-center w-8 h-8 rounded-lg mr-3"
+          className="flex cursor-pointer justify-center items-center w-8 h-8 rounded-lg mr-3"
         >
           <FontAwesomeIcon className="text-black" size="lg" icon={faPaperclip} />
         </div>
@@ -36,7 +36,7 @@ export default function MessageInput({
             onClick={onIconClick}
             className="bg-gray-100 flex justify-center items-center w-8 h-8 rounded-lg"
           >
-            <FontAwesomeIcon className="text-gray-800" size="1x" icon={icon} />
+            <FontAwesomeIcon className="cursor-pointer text-gray-800" size="1x" icon={icon} />
           </div>
         )}
       </div>

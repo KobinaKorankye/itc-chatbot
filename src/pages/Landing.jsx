@@ -8,8 +8,10 @@ import AppContext from "../contexts/AppContext";
 
 export default function Landing() {
   const [username, setUsername] = useState("");
+  const [otherLoginClicked, setOtherLoginClicked] = useState(false);
   const [loginClicked, setLoginClicked] = useState(false);
   const [signupClicked, setSignupClicked] = useState(false);
+  const [otherSignupClicked, setOtherSignupClicked] = useState(false);
   const { setUser } = useContext(AppContext);
   const navigate = useNavigate();
 
@@ -40,14 +42,14 @@ export default function Landing() {
           <div className="text-2xl text-slate-200 font-bold">ITC Agent</div>
         </div>
         <div className="flex-1 flex justify-center items-center">
-          <Loader animationName={"itc_agent"} width={300} height={400} />
+          <Loader animationName={"itc_agent"} width={315} height={400} />
         </div>
       </div>
 
-      <div className={`w-2/5 h-[100vh] overflow-hidden`}>
+      <div className={`relative w-2/5 h-[100vh] overflow-hidden`}>
         {/* GET STARTED SECTION */}
         <div
-          className={`relative ${
+          className={`absolute ${
             loginClicked
               ? "top-[100vh]"
               : signupClicked
@@ -75,8 +77,8 @@ export default function Landing() {
         </div>
 
         <div
-          className={`relative ${
-            loginClicked ? "-top-[100vh]" : "-top-[200vh]"
+          className={`absolute ${
+            loginClicked ? "top-0" : "-top-[100vh]"
           } duration-500 flex flex-col w-full h-full items-center py-10`}
         >
           <div className="h-10 w-10 flex justify-center mb-36 items-center rounded-full overflow-hidden border border-gray-500 bg-white">
@@ -97,12 +99,13 @@ export default function Landing() {
             >
               Submit
             </button>
+            <div style={{fontFamily: 'Ubuntu'}} className="text-sm text-center mt-1">Don't have an account? <span onClick={()=>{setSignupClicked(true);}} className="text-sky-800 cursor-pointer hover:text-sky-600">Sign up</span></div>
           </div>
         </div>
 
         <div
-          className={`relative ${
-            signupClicked ? "-top-[200vh]" : "-top-[100vh]"
+          className={`absolute ${
+            signupClicked ? "top-0" : "top-[100vh]"
           } duration-200 flex flex-col w-full h-full justify-center items-center`}
         >
           <div className="text-3xl font-bold">Sign up</div>
