@@ -65,8 +65,8 @@ function Chat() {
       socket.emit("chat", {
         message,
         connection_id: connectionId,
-        index: index || "search-chatbot-final",
-        size: size || 2,
+        index: index || "search-chatbot",
+        size: size || 3,
       });
     }
   };
