@@ -30,9 +30,10 @@ function Chat() {
 
   useEffect(() => {
     const newSocket = io(SOCKET_SERVER_URL, { path: "/" });
-
     try {
       // Connect to Socket.IO server
+      newSocket.emit('connect');
+
       newSocket.on("connection", (data) => {
         console.log("Connected to socket server");
         console.log(data);
