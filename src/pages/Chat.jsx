@@ -50,7 +50,7 @@ function Chat() {
           text: message.message,
           incoming: true,
         };
-        setMessages((prevMessages) => [...prevMessages, msg]);
+        setMessages((prevMessages) => [msg, ...prevMessages]);
         console.log("Message from llm: ", message);
         setTypingIndicator(false);
       });
@@ -69,7 +69,7 @@ function Chat() {
         text: message,
         incoming: false,
       };
-      setMessages((prevMessages) => [...prevMessages, msg]);
+      setMessages((prevMessages) => [msg, ...prevMessages]);
       socket.emit("chat", {
         message,
         connection_id: connectionId,
@@ -153,7 +153,7 @@ function Chat() {
                     <Loader height={80} width={80} />
                   </div>
                 )}
-                {messages.reverse().map((message) => {
+                {messages.map((message) => {
                   if (message.incoming) {
                     return <BotMessage message={message.text} />;
                   } else {
