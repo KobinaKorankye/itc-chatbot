@@ -18,7 +18,7 @@ import io from "socket.io-client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import AppContext from "../contexts/AppContext";
 
-const SOCKET_SERVER_URL = "ws://54.246.247.31:8000";
+const SOCKET_SERVER_URL = "http://54.246.247.31:8000";
 
 function Chat() {
   const [message, setMessage] = useState("");
@@ -29,11 +29,9 @@ function Chat() {
   const [typingIndicator, setTypingIndicator] = useState(false);
 
   useEffect(() => {
-    const newSocket = io(SOCKET_SERVER_URL, { path: "/" });
+    // Connect to Socket.IO server
+    const newSocket = io(SOCKET_SERVER_URL);
     try {
-      // Connect to Socket.IO server
-      newSocket.emit('connect');
-
       newSocket.on("connection", (data) => {
         console.log("Connected to socket server");
         console.log(data);
