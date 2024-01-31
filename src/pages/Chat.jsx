@@ -46,7 +46,7 @@ function Chat() {
       });
 
       newSocket.on("message_from_llm", (message) => {
-        msg = {
+        const msg = {
           text: message.message,
           incoming: true,
         };
@@ -65,7 +65,7 @@ function Chat() {
 
   const sendMessage = (message, connectionId, index, size) => {
     if (socket) {
-      msg = {
+      const msg = {
         text: message,
         incoming: false,
       };
@@ -76,6 +76,7 @@ function Chat() {
         index: index || "search-chatbot",
         size: size || 3,
       });
+      setMessage('')
     }
   };
 
