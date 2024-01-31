@@ -61,6 +61,7 @@ function Chat() {
 
   const sendMessage = (message, connectionId, index, size) => {
     if (socket) {
+      alert('hi')
       socket.emit("chat", {
         message,
         connection_id: connectionId,
@@ -251,8 +252,8 @@ function Chat() {
               value={message}
               onChange={(e) => {
                 setMessage(e.target.value);
-                sendMessage(e.target.value, connectionId)
               }}
+              onIconClick={()=>{sendMessage(message, connectionId)}}
               boxClassName={"w-[80%]"}
               placeholder={"Message ITC Agent"}
             />
