@@ -55,7 +55,9 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Landing />} />
-          <Route path="/chat" element={<Chat />} />
+          <Route path="/chat" element={<PrivateRoute />}>
+            <Route path="" element={<Chat />} />
+          </Route>
         </Routes>
       </BrowserRouter>
     </AppContext.Provider>

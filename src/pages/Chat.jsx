@@ -18,35 +18,39 @@ import io from "socket.io-client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import AppContext from "../contexts/AppContext";
 
-const SOCKET_SERVER_URL = "https://itc-bot-backend.onrender.com";
+const SOCKET_SERVER_URL = "http://54.246.247.31:8000";
 
 function Chat() {
   const [message, setMessage] = useState("");
-  const {user} = useContext(AppContext);
+  const { user } = useContext(AppContext);
 
   const [socket, setSocket] = useState(null);
   const [messages, setMessages] = useState([]);
   const [typingIndicator, setTypingIndicator] = useState(false);
 
   useEffect(() => {
-    // Connect to Socket.IO server
-    const newSocket = io(SOCKET_SERVER_URL, { path: "/connect" });
+    const newSocket = io(SOCKET_SERVER_URL, { path: "/" });
 
-    newSocket.on("connection", (data) => {
-      console.log("Connected to socket server");
-      console.log(data);
-    });
+    try {
+      // Connect to Socket.IO server
+      newSocket.on("connection", (data) => {
+        console.log("Connected to socket server");
+        console.log(data);
+      });
 
-    newSocket.on("typing_indicator", () => {
-      setTypingIndicator(true);
-    });
+      newSocket.on("typing_indicator", () => {
+        setTypingIndicator(true);
+      });
 
-    newSocket.on("message_from_llm", (message) => {
-      setMessages((prevMessages) => [...prevMessages, message]);
-      setTypingIndicator(false);
-    });
+      newSocket.on("message_from_llm", (message) => {
+        setMessages((prevMessages) => [...prevMessages, message]);
+        setTypingIndicator(false);
+      });
 
-    setSocket(newSocket);
+      setSocket(newSocket);
+    } catch (error) {
+      console.log(error);
+    }
 
     return () => newSocket.disconnect();
   }, []);
@@ -61,6 +65,55 @@ function Chat() {
       });
     }
   };
+
+  // useEffect(() => {
+  //   const newSocket = new WebSocket(SOCKET_SERVER_URL);
+  
+  //   newSocket.onopen = () => {
+  //     console.log("Connected to socket server");
+  //   };
+  
+  //   newSocket.onmessage = (event) => {
+  //     const data = JSON.parse(event.data);
+  //     if (data.type === 'typing_indicator') {
+  //       setTypingIndicator(true);
+  //     } else if (data.type === 'message_from_llm') {
+  //       setMessages((prevMessages) => [...prevMessages, data.message]);
+  //       setTypingIndicator(false);
+  //     }
+  //   };
+  
+  //   newSocket.onerror = (error) => {
+  //     console.log('WebSocket Error: ', error);
+  //   };
+  
+  //   newSocket.onclose = () => {
+  //     console.log('WebSocket connection closed');
+  //   };
+  
+  //   setSocket(newSocket);
+  
+  //   return () => {
+  //     if (newSocket.readyState === WebSocket.OPEN) {
+  //       newSocket.close();
+  //     }
+  //   };
+  // }, []);
+  
+  // const sendMessage = (message, connectionId, index, size) => {
+  //   if (socket && socket.readyState === WebSocket.OPEN) {
+  //     socket.send(JSON.stringify({
+  //       type: 'chat',
+  //       data: {
+  //         message,
+  //         connection_id: connectionId,
+  //         index: index || "search-chatbot-final",
+  //         size: size || 2,
+  //       }
+  //     }));
+  //   }
+  // };
+  
 
   return (
     <div className="flex flex-col h-[100vh] bg-white text-black items-center">
@@ -96,7 +149,9 @@ function Chat() {
             <div className="h-[35px] w-[35px] uppercase flex font-semibold text-white text-lg justify-center items-center rounded-full overflow-hidden border border-gray-700 bg-zinc-500">
               {user[0]}
             </div>
-            <div className="ml-2 text-gray-200 text-sm font-semibold">{user}</div>
+            <div className="ml-2 text-gray-200 text-sm font-semibold">
+              {user}
+            </div>
           </div>
         </div>
 

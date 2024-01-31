@@ -3,7 +3,7 @@ import AppContext from "../contexts/AppContext";
 
 export default function UserMessage({message}) {
   const { user } = useContext(AppContext);
-  console.log(user);
+
   return (
     <div className="flex w-full text-gray-600">
       <div className="h-6 w-6 uppercase flex font-semibold text-white text-xs justify-center items-center self-start rounded-full overflow-hidden border border-gray-700 bg-zinc-500">
