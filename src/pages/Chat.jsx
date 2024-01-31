@@ -18,7 +18,7 @@ import io from "socket.io-client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import AppContext from "../contexts/AppContext";
 
-const SOCKET_SERVER_URL = "http://54.246.247.31:8000";
+const SOCKET_SERVER_URL = "ws://54.246.247.31:8000";
 
 function Chat() {
   const [message, setMessage] = useState("");
