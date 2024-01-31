@@ -153,7 +153,7 @@ function Chat() {
                     <Loader height={80} width={80} />
                   </div>
                 )}
-                {messages.map((message) => {
+                {messages.reverse().map((message) => {
                   if (message.incoming) {
                     return <BotMessage message={message.text} />;
                   } else {

@@ -16,7 +16,7 @@ export default function MessageInput({
   return (
     <div className={`${boxClassName}`}>
       <div
-        className="flex w-full items-center shadow appearance-none rounded-2xl border border-gray-500 w-full py-2 px-3 h-[3.4rem] text-gray-700 
+        className="flex w-full mt-10 items-center shadow appearance-none rounded-2xl border border-gray-500 w-full py-2 px-3 h-[3.4rem] text-gray-700 
                 leading-tight "
       >
         <div
