@@ -35,7 +35,7 @@ function Chat() {
     try {
       newSocket.on("connection", (data) => {
         console.log("Connected to socket server");
-        alert("Connected")
+        alert("Connected");
         setConnectionId(data.connectionId);
         console.log(data);
       });
@@ -44,9 +44,13 @@ function Chat() {
         setTypingIndicator(true);
         console.log("typing");
       });
-      
+
       newSocket.on("message_from_llm", (message) => {
-        setMessages((prevMessages) => [...prevMessages, message]);
+        msg = {
+          text: message.message,
+          incoming: true,
+        };
+        setMessages((prevMessages) => [...prevMessages, msg]);
         console.log("Message from llm: ", message);
         setTypingIndicator(false);
       });
@@ -61,7 +65,11 @@ function Chat() {
 
   const sendMessage = (message, connectionId, index, size) => {
     if (socket) {
-      alert('hi')
+      msg = {
+        text: message,
+        incoming: false,
+      };
+      setMessages((prevMessages) => [...prevMessages, msg]);
       socket.emit("chat", {
         message,
         connection_id: connectionId,
@@ -70,54 +78,6 @@ function Chat() {
       });
     }
   };
-
-  // useEffect(() => {
-  //   const newSocket = new WebSocket(SOCKET_SERVER_URL);
-
-  //   newSocket.onopen = () => {
-  //     console.log("Connected to socket server");
-  //   };
-
-  //   newSocket.onmessage = (event) => {
-  //     const data = JSON.parse(event.data);
-  //     if (data.type === 'typing_indicator') {
-  //       setTypingIndicator(true);
-  //     } else if (data.type === 'message_from_llm') {
-  //       setMessages((prevMessages) => [...prevMessages, data.message]);
-  //       setTypingIndicator(false);
-  //     }
-  //   };
-
-  //   newSocket.onerror = (error) => {
-  //     console.log('WebSocket Error: ', error);
-  //   };
-
-  //   newSocket.onclose = () => {
-  //     console.log('WebSocket connection closed');
-  //   };
-
-  //   setSocket(newSocket);
-
-  //   return () => {
-  //     if (newSocket.readyState === WebSocket.OPEN) {
-  //       newSocket.close();
-  //     }
-  //   };
-  // }, []);
-
-  // const sendMessage = (message, connectionId, index, size) => {
-  //   if (socket && socket.readyState === WebSocket.OPEN) {
-  //     socket.send(JSON.stringify({
-  //       type: 'chat',
-  //       data: {
-  //         message,
-  //         connection_id: connectionId,
-  //         index: index || "search-chatbot-final",
-  //         size: size || 2,
-  //       }
-  //     }));
-  //   }
-  // };
 
   return (
     <div className="flex flex-col h-[100vh] bg-white text-black items-center">
@@ -187,21 +147,24 @@ function Chat() {
           <div className="flex flex-col items-center h-[85vh] w-full">
             <div className="flex flex-col w-[80%] h-[78vh] overflow-y-scroll py-2">
               <div className="flex flex-col-reverse gap-2 flex-grow">
-                <div className="flex items-center ml-5">
-                  <Loader height={80} width={80} />
-                </div>
-                <UserMessage message={"I'm good, how about you?"} />
-                <BotMessage
-                  message={
-                    "Hi, How's it going? Hi, How's it going? Hi, How's it going? Hi, How's it going? Hi, How's it going? Hi, How's it going? Hi, How's it going?"
+                {typingIndicator && (
+                  <div className="flex items-center ml-5">
+                    <Loader height={80} width={80} />
+                  </div>
+                )}
+                {messages.map((message) => {
+                  if (message.incoming) {
+                    return <BotMessage message={message.text} />;
+                  } else {
+                    return <UserMessage message={message.text} />;
                   }
-                />
-                <UserMessage message={"Hello"} />
+                })}
               </div>
             </div>
             <MessageInput
               icon={faArrowUp}
               value={message}
+              disabled={typingIndicator}
               onChange={(e) => setMessage(e.target.value)}
               boxClassName={"w-[85%]"}
               placeholder={"Message ITC Agent"}
@@ -237,23 +200,30 @@ function Chat() {
           <div className="flex flex-col items-center h-full w-[70%]">
             <div className="flex flex-col w-[80%] h-full overflow-y-scroll py-2">
               <div className="flex gap-4 flex-col-reverse flex-grow">
-                <div className="flex items-center ml-5">
-                  <Loader height={80} width={80} />
-                </div>
-                <UserMessage message={"I'm good, how about you?"} />
-                <BotMessage message={"Hi, How's it going?"} />
-                <UserMessage message={"I'm good, how about you?"} />
-                <BotMessage message={"Hi, How's it going?"} />
-                <UserMessage message={"Hello"} />
+                {typingIndicator && (
+                  <div className="flex items-center ml-5">
+                    <Loader height={80} width={80} />
+                  </div>
+                )}
+                {messages.map((message) => {
+                  if (message.incoming) {
+                    return <BotMessage message={message.text} />;
+                  } else {
+                    return <UserMessage message={message.text} />;
+                  }
+                })}
               </div>
             </div>
             <MessageInput
               icon={faArrowUp}
               value={message}
+              disabled={typingIndicator}
               onChange={(e) => {
                 setMessage(e.target.value);
               }}
-              onIconClick={()=>{sendMessage(message, connectionId)}}
+              onIconClick={() => {
+                sendMessage(message, connectionId);
+              }}
               boxClassName={"w-[80%]"}
               placeholder={"Message ITC Agent"}
             />

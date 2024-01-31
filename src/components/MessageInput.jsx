@@ -1,4 +1,4 @@
-import { faPaperclip } from "@fortawesome/free-solid-svg-icons";
+import { faEllipsis, faPaperclip } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
 
@@ -9,6 +9,7 @@ export default function MessageInput({
   type,
   onChange,
   placeholder,
+  disabled,
   onIconClick,
   onAttachClick
 }) {
@@ -28,6 +29,7 @@ export default function MessageInput({
           type={type}
           placeholder={placeholder}
           value={value}
+          disabled={disabled}
           onChange={onChange}
           className="w-full focus:outline-none focus:shadow-outline bg-transparent text-black text-base"
         />
@@ -36,7 +38,7 @@ export default function MessageInput({
             onClick={onIconClick}
             className="bg-gray-100 flex justify-center items-center w-8 h-8 rounded-lg"
           >
-            <FontAwesomeIcon className="cursor-pointer text-gray-800" size="1x" icon={icon} />
+            <FontAwesomeIcon className="cursor-pointer text-gray-800" size="1x" icon={disabled?faEllipsis:icon} />
           </div>
         )}
       </div>
