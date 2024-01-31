@@ -23,6 +23,7 @@ const SOCKET_SERVER_URL = "http://54.246.247.31:8000";
 function Chat() {
   const [message, setMessage] = useState("");
   const { user } = useContext(AppContext);
+  const [connectionId, setConnectionId] = useState("");
 
   const [socket, setSocket] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -34,15 +35,19 @@ function Chat() {
     try {
       newSocket.on("connection", (data) => {
         console.log("Connected to socket server");
+        alert("Connected")
+        setConnectionId(data.connectionId);
         console.log(data);
       });
 
       newSocket.on("typing_indicator", () => {
         setTypingIndicator(true);
+        console.log("typing");
       });
-
+      
       newSocket.on("message_from_llm", (message) => {
         setMessages((prevMessages) => [...prevMessages, message]);
+        console.log("Message from llm: ", message);
         setTypingIndicator(false);
       });
 
@@ -67,11 +72,11 @@ function Chat() {
 
   // useEffect(() => {
   //   const newSocket = new WebSocket(SOCKET_SERVER_URL);
-  
+
   //   newSocket.onopen = () => {
   //     console.log("Connected to socket server");
   //   };
-  
+
   //   newSocket.onmessage = (event) => {
   //     const data = JSON.parse(event.data);
   //     if (data.type === 'typing_indicator') {
@@ -81,24 +86,24 @@ function Chat() {
   //       setTypingIndicator(false);
   //     }
   //   };
-  
+
   //   newSocket.onerror = (error) => {
   //     console.log('WebSocket Error: ', error);
   //   };
-  
+
   //   newSocket.onclose = () => {
   //     console.log('WebSocket connection closed');
   //   };
-  
+
   //   setSocket(newSocket);
-  
+
   //   return () => {
   //     if (newSocket.readyState === WebSocket.OPEN) {
   //       newSocket.close();
   //     }
   //   };
   // }, []);
-  
+
   // const sendMessage = (message, connectionId, index, size) => {
   //   if (socket && socket.readyState === WebSocket.OPEN) {
   //     socket.send(JSON.stringify({
@@ -112,7 +117,6 @@ function Chat() {
   //     }));
   //   }
   // };
-  
 
   return (
     <div className="flex flex-col h-[100vh] bg-white text-black items-center">
@@ -245,7 +249,10 @@ function Chat() {
             <MessageInput
               icon={faArrowUp}
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e) => {
+                setMessage(e.target.value);
+                sendMessage(e.target.value, connectionId)
+              }}
               boxClassName={"w-[80%]"}
               placeholder={"Message ITC Agent"}
             />
