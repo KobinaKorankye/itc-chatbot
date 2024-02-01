@@ -90,12 +90,14 @@ export default function Landing() {
             <TextInput
               placeholder={"username"}
               value={username}
+              onEnterPress={onLoginSubmit}
               onChange={(e) => setUsername(e.target.value)}
-            />
+              />
             <TextInput
               placeholder={"password"}
               type={"password"}
               value={password}
+              onEnterPress={onLoginSubmit}
               onChange={(e) => setPassword(e.target.value)}
             />
             <button
