@@ -163,11 +163,11 @@ function Chat() {
                     <Loader height={80} width={80} />
                   </div>
                 )}
-                {messages.map((message) => {
+                {messages.map((message, index) => {
                   if (message.incoming) {
-                    return <BotMessage message={message.text} />;
+                    return <BotMessage key={index} message={message.text} />;
                   } else {
-                    return <UserMessage message={message.text} />;
+                    return <UserMessage key={index} message={message.text} />;
                   }
                 })}
               </div>
@@ -225,11 +225,11 @@ function Chat() {
                     <Loader height={80} width={80} />
                   </div>
                 )}
-                {messages.map((message) => {
+                {messages.map((message, index) => {
                   if (message.incoming) {
-                    return <BotMessage message={message.text} />;
+                    return <BotMessage key={index} message={message.text} />;
                   } else {
-                    return <UserMessage message={message.text} />;
+                    return <UserMessage key={index} message={message.text} />;
                   }
                 })}
               </div>
