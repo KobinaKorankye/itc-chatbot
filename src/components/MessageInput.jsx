@@ -11,7 +11,8 @@ export default function MessageInput({
   placeholder,
   disabled,
   onIconClick,
-  onAttachClick
+  onFileSelect,
+  onAttachClick,
 }) {
   return (
     <div className={`${boxClassName}`}>
@@ -23,15 +24,30 @@ export default function MessageInput({
           onClick={onAttachClick}
           className="flex cursor-pointer justify-center items-center w-8 h-8 rounded-lg mr-3"
         >
-          <FontAwesomeIcon className="text-black" size="lg" icon={faPaperclip} />
+          <input
+            style={{ display: "none" }}
+            type={"file"}
+            id="file"
+            onChange={onFileSelect}
+            disabled={disabled}
+            accept="application/zip"
+            placeholder="No zip file selected"
+          />
+          <label htmlFor="file">
+            <FontAwesomeIcon
+              className="text-black cursor-pointer"
+              size="lg"
+              icon={faPaperclip}
+            />
+          </label>
         </div>
         <input
           type={type}
-          onKeyDown={(e)=>{
-            if (e.key === 'Enter') {
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
               onIconClick();
               // Perform your action on Enter key press here
-          }
+            }
           }}
           placeholder={placeholder}
           value={value}
@@ -44,7 +60,11 @@ export default function MessageInput({
             onClick={onIconClick}
             className="bg-gray-100 hover:scale-[1.1] hover:bg-gray-200 duration-200 border border-gray-400/50 flex justify-center items-center w-[40px] h-[40px] rounded-lg"
           >
-            <FontAwesomeIcon className="cursor-pointer text-gray-800" size="1x" icon={disabled?faEllipsis:icon} />
+            <FontAwesomeIcon
+              className="cursor-pointer text-gray-800"
+              size="1x"
+              icon={disabled ? faEllipsis : icon}
+            />
           </div>
         )}
       </div>

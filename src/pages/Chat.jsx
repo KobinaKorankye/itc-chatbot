@@ -7,6 +7,8 @@ import UserMessage from "../components/UserMessage";
 import BotMessage from "../components/BotMessage";
 import {
   faArrowUp,
+  faCheck,
+  faEllipsis,
   faFile,
   faNoteSticky,
   faPenClip,
@@ -17,10 +19,12 @@ import { useContext, useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import AppContext from "../contexts/AppContext";
+import axios from "axios";
 
 const SOCKET_SERVER_URL = "http://54.246.247.31:8000";
 
 function Chat() {
+  const [connnected, setConnected] = useState(false);
   const [message, setMessage] = useState("");
   const { user } = useContext(AppContext);
   const [connectionId, setConnectionId] = useState("");
@@ -44,7 +48,7 @@ function Chat() {
     try {
       newSocket.on("connection", (data) => {
         console.log("Connected to socket server");
-        alert("Connected");
+        setConnected(true);
         setConnectionId(data.connectionId);
         console.log(data);
       });
@@ -62,6 +66,12 @@ function Chat() {
         setMessages((prevMessages) => [msg, ...prevMessages]);
         console.log("Message from llm: ", message);
         setTypingIndicator(false);
+      });
+
+      newSocket.on("disconnect", () => {
+        console.log("Disconnected from socket server");
+        setConnected(false);
+        // Perform any additional actions upon disconnection
       });
 
       setSocket(newSocket);
@@ -86,6 +96,41 @@ function Chat() {
         size: size || 3,
       });
       setMessage("");
+    }
+  };
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+  }
+
+  const onFileSelect = async (event) => {
+    const file = event.target.files[0];
+
+    if (file) {
+      const formData = new FormData();
+      formData.append("data", file); // The key 'file' should be according to your server's expected field.
+
+      try {
+        const response = await axios.post(
+          `${SOCKET_SERVER_URL}/upload`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+        alert("Upload successful");
+        console.log("File uploaded successfully", response.data);
+      } catch (error) {
+        alert("Error uploading");
+        console.error("Error uploading file", error);
+      }
     }
   };
 
@@ -182,6 +227,7 @@ function Chat() {
               onIconClick={() => {
                 sendMessage(message, connectionId);
               }}
+              onFileSelect={onFileSelect}
               boxClassName={"w-[80%]"}
               placeholder={"Message ITC Agent"}
             />
@@ -193,7 +239,7 @@ function Chat() {
 
         {/* WEB */}
         <div className="-md:hidden flex h-full w-full">
-          <div className="w-[20%] h-[15vh] flex items-center pl-10">
+          <div className="w-[20%] flex flex-col items-center">
             {/* <div className="ml-1 bg-white p-2 rounded-xl">
               <img src={ITCLogo} className="h-10 rounded-xl" />
             </div> */}
@@ -205,9 +251,31 @@ function Chat() {
             </div> */}
             <div
               style={{ fontFamily: "BlackOps" }}
-              className="text-[24px] text-gray-700 ml-5 font-semibold"
+              className="text-[24px] text-gray-700 font-semibold mt-10"
             >
               ITC Agent
+            </div>
+            <div
+              className={`flex w-[70%] m-5 p-2 items-center cursor-pointer border ${
+                connnected ? "border-teal-500" : "border-amber-500"
+              } rounded-lg`}
+            >
+              <div
+                // style={{ fontFamily: "Ubuntu" }}
+                className={`${
+                  connnected ? "text-teal-700" : "text-amber-700"
+                } mx-auto text-xs`}
+              >
+                {connnected ? "connected" : "connecting..."}
+              </div>
+
+              <FontAwesomeIcon
+                className={`${
+                  connnected ? "text-teal-600" : "text-amber-600"
+                } cursor-pointer ml-auto text-white`}
+                size="1x"
+                icon={connnected ? faCheck : faEllipsis}
+              />
             </div>
             {/* <div className="bg-white ml-5 p-2 rounded-xl">
               <img
@@ -244,6 +312,7 @@ function Chat() {
               onIconClick={() => {
                 sendMessage(message, connectionId);
               }}
+              onFileSelect={onFileSelect}
               boxClassName={"w-[80%]"}
               placeholder={"Message ITC Agent"}
             />
