@@ -30,7 +30,7 @@ export default function MessageInput({
             id="file"
             onChange={onFileSelect}
             disabled={disabled}
-            accept="application/zip"
+            accept="application/zip application/msword application/pdf application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             placeholder="No zip file selected"
           />
           <label htmlFor="file">

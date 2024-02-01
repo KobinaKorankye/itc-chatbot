@@ -24,7 +24,7 @@ import axios from "axios";
 const SOCKET_SERVER_URL = "http://54.246.247.31:8000";
 
 function Chat() {
-  const [connnected, setConnected] = useState(false);
+  const [connected, setConnected] = useState(false);
   const [message, setMessage] = useState("");
   const { user } = useContext(AppContext);
   const [connectionId, setConnectionId] = useState("");
@@ -113,6 +113,7 @@ function Chat() {
 
     if (file) {
       const formData = new FormData();
+      formData.append("index", `${new Date.now()}`);
       formData.append("data", file); // The key 'file' should be according to your server's expected field.
 
       try {
@@ -256,26 +257,32 @@ function Chat() {
               ITC Agent
             </div>
             <div
-              className={`flex w-[70%] m-5 p-2 items-center cursor-pointer border ${
-                connnected ? "border-teal-500" : "border-amber-500"
+              className={`flex m-5 p-2 items-center border ${
+                connected ? "border-teal-500" : "border-amber-500"
               } rounded-lg`}
             >
               <div
                 // style={{ fontFamily: "Ubuntu" }}
                 className={`${
-                  connnected ? "text-teal-700" : "text-amber-700"
-                } mx-auto text-xs`}
+                  connected ? "text-teal-700" : "text-amber-700"
+                } ml-2 text-xs`}
               >
-                {connnected ? "connected" : "connecting..."}
+                {connected ? "connected" : "connecting..."}
               </div>
-
-              <FontAwesomeIcon
-                className={`${
-                  connnected ? "text-teal-600" : "text-amber-600"
-                } cursor-pointer ml-auto text-white`}
-                size="1x"
-                icon={connnected ? faCheck : faEllipsis}
-              />
+              {
+                connected?
+                <FontAwesomeIcon
+                  className="text-teal-600 mx-3"
+                  size="1x"
+                  icon={faCheck}
+                />
+                :
+                <FontAwesomeIcon
+                  className="text-amber-600 mx-3"
+                  size="1x"
+                  icon={faEllipsis}
+                />
+              }
             </div>
             {/* <div className="bg-white ml-5 p-2 rounded-xl">
               <img
