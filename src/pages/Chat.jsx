@@ -111,9 +111,11 @@ function Chat() {
   const onFileSelect = async (event) => {
     const file = event.target.files[0];
 
+    console.log('Trying to upload')
     if (file) {
+      console.log('Trying to upload file')
       const formData = new FormData();
-      formData.append("index", `${new Date.now()}`);
+      formData.append("index", `${Date.now()}`);
       formData.append("data", file); // The key 'file' should be according to your server's expected field.
 
       try {
