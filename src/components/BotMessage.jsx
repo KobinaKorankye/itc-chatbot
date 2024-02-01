@@ -1,5 +1,6 @@
 import React from "react";
 import ITCLogo from "../assets/ITCLogo.jpeg";
+import MarkdownParser from "./MarkDownParser";
 
 export default function BotMessage({ message }) {
   return (
@@ -10,7 +11,9 @@ export default function BotMessage({ message }) {
       <div className="px-5 flex-1">
         <div className="font-bold text-black">ITC Agent</div>
         {/* <div style={{ fontFamily: "ShareTech" }}>{message}</div> */}
-        <div style={{ fontFamily: "Ubuntu" }}>{message}</div>
+        <div style={{ fontFamily: "Ubuntu" }}>
+          <MarkdownParser text={message} />
+        </div>
       </div>
     </div>
   );

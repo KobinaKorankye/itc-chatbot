@@ -13,7 +13,7 @@ import {
   faPenToSquare,
   faStickyNote,
 } from "@fortawesome/free-solid-svg-icons";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import AppContext from "../contexts/AppContext";
@@ -28,6 +28,15 @@ function Chat() {
   const [socket, setSocket] = useState(null);
   const [messages, setMessages] = useState([]);
   const [typingIndicator, setTypingIndicator] = useState(false);
+
+  const bottomRef = useRef(null);
+  const bottomRefMobile = useRef(null);
+
+  useEffect(() => {
+    // Scroll to the bottom of the div
+    bottomRefMobile.current?.scrollIntoView({ behavior: "smooth" });
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, typingIndicator]);
 
   useEffect(() => {
     // Connect to Socket.IO server
@@ -76,7 +85,7 @@ function Chat() {
         index: index || "search-chatbot",
         size: size || 3,
       });
-      setMessage('')
+      setMessage("");
     }
   };
 
@@ -148,8 +157,9 @@ function Chat() {
           <div className="flex flex-col items-center h-[85vh] w-full">
             <div className="flex flex-col w-[80%] h-[78vh] overflow-y-scroll py-2">
               <div className="flex flex-col-reverse gap-2 flex-grow">
+                <div ref={bottomRefMobile}></div>
                 {typingIndicator && (
-                  <div className="flex items-center ml-5">
+                  <div className="flex items-center ml-8">
                     <Loader height={80} width={80} />
                   </div>
                 )}
@@ -166,10 +176,18 @@ function Chat() {
               icon={faArrowUp}
               value={message}
               disabled={typingIndicator}
-              onChange={(e) => setMessage(e.target.value)}
-              boxClassName={"w-[85%]"}
+              onChange={(e) => {
+                setMessage(e.target.value);
+              }}
+              onIconClick={() => {
+                sendMessage(message, connectionId);
+              }}
+              boxClassName={"w-[80%]"}
               placeholder={"Message ITC Agent"}
             />
+            <div className="text-gray-400 my-2 text-xs">
+              ITC Agent might make errors; cross-check vital information
+            </div>
           </div>
         </div>
 
@@ -201,8 +219,9 @@ function Chat() {
           <div className="flex flex-col items-center h-full w-[70%]">
             <div className="flex flex-col w-[80%] h-full overflow-y-scroll py-2">
               <div className="flex gap-4 flex-col-reverse flex-grow">
+                <div ref={bottomRef}></div>
                 {typingIndicator && (
-                  <div className="flex items-center ml-5">
+                  <div className="flex items-center ml-8">
                     <Loader height={80} width={80} />
                   </div>
                 )}

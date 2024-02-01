@@ -27,6 +27,12 @@ export default function MessageInput({
         </div>
         <input
           type={type}
+          onKeyDown={(e)=>{
+            if (e.key === 'Enter') {
+              onIconClick();
+              // Perform your action on Enter key press here
+          }
+          }}
           placeholder={placeholder}
           value={value}
           disabled={disabled}
@@ -36,7 +42,7 @@ export default function MessageInput({
         {icon && (
           <div
             onClick={onIconClick}
-            className="bg-gray-100 flex justify-center items-center w-8 h-8 rounded-lg"
+            className="bg-gray-100 hover:scale-[1.1] hover:bg-gray-200 duration-200 border border-gray-400/50 flex justify-center items-center w-[40px] h-[40px] rounded-lg"
           >
             <FontAwesomeIcon className="cursor-pointer text-gray-800" size="1x" icon={disabled?faEllipsis:icon} />
           </div>
