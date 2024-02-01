@@ -1,6 +1,6 @@
 import React from 'react';
 import Lottie from 'react-lottie';
-import chat_loading from './chat_loading.json'
+import chat_loading from './chat_loading_dark.json'
 import itc_agent from './itc_agent.json'
 
 const animations = {
