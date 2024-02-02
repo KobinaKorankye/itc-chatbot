@@ -49,7 +49,7 @@ function Chat() {
       newSocket.on("connection", (data) => {
         console.log("Connected to socket server");
         setConnected(true);
-        setConnectionId(data.connectionId);
+        setConnectionId(data.connection_id);
         console.log(data);
       });
 
