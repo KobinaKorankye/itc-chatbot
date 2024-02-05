@@ -8,6 +8,7 @@ import BotMessage from "../components/BotMessage";
 import {
   faArrowUp,
   faCheck,
+  faClose,
   faEllipsis,
   faFile,
   faNoteSticky,
@@ -26,10 +27,13 @@ const SOCKET_SERVER_URL = "http://54.246.247.31:8000";
 function Chat() {
   const [connected, setConnected] = useState(false);
   const [message, setMessage] = useState("");
+  const [selectedMsgChunks, setSelectedMessageChunks] = useState({});
+  const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
   const { user } = useContext(AppContext);
   const [connectionId, setConnectionId] = useState("");
 
   const [socket, setSocket] = useState(null);
+  const [chunks, setChunks] = useState([]);
   const [messages, setMessages] = useState([]);
   const [typingIndicator, setTypingIndicator] = useState(false);
 
@@ -68,6 +72,11 @@ function Chat() {
         setTypingIndicator(false);
       });
 
+      newSocket.on("chunks_retrieved", (chunks) => {
+        setChunks((prevChunks) => [chunks, ...prevChunks]);
+        console.log(chunks);
+      });
+
       newSocket.on("disconnect", () => {
         console.log("Disconnected from socket server");
         setConnected(false);
@@ -99,21 +108,12 @@ function Chat() {
     }
   };
 
-  function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
-    });
-  }
-
   const onFileSelect = async (event) => {
     const file = event.target.files[0];
 
-    console.log('Trying to upload')
+    console.log("Trying to upload");
     if (file) {
-      console.log('Trying to upload file')
+      console.log("Trying to upload file");
       const formData = new FormData();
       formData.append("index", `${Date.now()}`);
       formData.append("data", file); // The key 'file' should be according to your server's expected field.
@@ -139,6 +139,63 @@ function Chat() {
 
   return (
     <div className="flex flex-col h-[100vh] bg-white text-black items-center">
+      {Object.keys(selectedMsgChunks).length > 0 && (
+        <div className="bg-black/50 border border-gray-600 rounded absolute h-[100vh] w-full flex justify-center items-center">
+          <div className="bg-white rounded-lg w-[80%] md:w-[60%] p-10 pt-0">
+            <div className="flex w-full my-5 justify-end">
+              <FontAwesomeIcon
+                onClick={() => setSelectedMessageChunks({})}
+                className="cursor-pointer"
+                size="lg"
+                icon={faClose}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <div style={{ fontFamily: "PoorStory" }}>Prompt</div>
+              <div className="py-1 px-4 bg-gray-200 flex-1 rounded-lg max-h-[10vh] text-wrap text-sm overflow-y-scroll">
+                {selectedMsgChunks.chunks[0].Question}
+              </div>
+            </div>
+            <div className="flex items-center justify-between mt-2">
+              <div style={{ fontFamily: "PoorStory" }}>Chunks Retrieved</div>
+              <div className="flex gap-1">
+                {selectedMsgChunks.chunks.map((chunk, index) => (
+                  <div
+                    onClick={() => {
+                      setCurrentChunkIndex(index);
+                    }}
+                    className={`${
+                      index == currentChunkIndex
+                        ? "text-white bg-sky-600"
+                        : "text-black bg-sky-100"
+                    } flex cursor-pointer justify-center items-center w-5 h-5 text-sm rounded`}
+                  >
+                    {index + 1}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="bg-gray-200 w-full rounded max-h-[40vh] py-1 px-4 text-wrap text-sm overflow-y-scroll">
+              <div>
+                {selectedMsgChunks.chunks[currentChunkIndex]["Passage 1"]}
+                {selectedMsgChunks.chunks[currentChunkIndex]["Passage 1"]}
+              </div>
+            </div>
+            <div className="flex items-center gap-1 mt-5 justify-end font-semibold">
+                  <div style={{ fontFamily: "PoorStory" }} className="text-base" >Relevance Score:</div>
+                <div className="bg-green-700 text-white text-xs px-2 py-1 rounded">
+                  <div>
+                    {
+                      selectedMsgChunks.chunks[currentChunkIndex][
+                        "Relevance Score 1"
+                      ]
+                    }
+                  </div>
+                </div>
+              </div>
+          </div>
+        </div>
+      )}
       <div className="w-full h-full flex">
         <div className="-md:hidden flex flex-col h-full bg-sky-900 w-[20%]">
           <div className="flex m-3 p-2 items-center text-sky-100 cursor-pointer bg-sky-800 hover:bg-sky-700 rounded-lg">
@@ -213,7 +270,15 @@ function Chat() {
                 )}
                 {messages.map((message, index) => {
                   if (message.incoming) {
-                    return <BotMessage key={index} message={message.text} />;
+                    return (
+                      <BotMessage
+                        onChunksClick={() =>
+                          setSelectedMessageChunks(chunks[parseInt(index / 2)])
+                        }
+                        key={index}
+                        message={message.text}
+                      />
+                    );
                   } else {
                     return <UserMessage key={index} message={message.text} />;
                   }
@@ -271,20 +336,19 @@ function Chat() {
               >
                 {connected ? "connected" : "connecting..."}
               </div>
-              {
-                connected?
+              {connected ? (
                 <FontAwesomeIcon
                   className="text-teal-600 mx-3"
                   size="1x"
                   icon={faCheck}
                 />
-                :
+              ) : (
                 <FontAwesomeIcon
                   className="text-amber-600 mx-3"
                   size="1x"
                   icon={faEllipsis}
                 />
-              }
+              )}
             </div>
             {/* <div className="bg-white ml-5 p-2 rounded-xl">
               <img
@@ -304,7 +368,15 @@ function Chat() {
                 )}
                 {messages.map((message, index) => {
                   if (message.incoming) {
-                    return <BotMessage key={index} message={message.text} />;
+                    return (
+                      <BotMessage
+                        key={index}
+                        onChunksClick={() =>
+                          setSelectedMessageChunks(chunks[parseInt(index / 2)])
+                        }
+                        message={message.text}
+                      />
+                    );
                   } else {
                     return <UserMessage key={index} message={message.text} />;
                   }
