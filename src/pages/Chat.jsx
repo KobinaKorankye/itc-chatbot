@@ -76,6 +76,10 @@ function Chat() {
         setChunks((prevChunks) => [chunks, ...prevChunks]);
         console.log(chunks);
       });
+      
+      newSocket.on("error", (message) => {
+        console.log('Error Event: ', message);
+      });
 
       newSocket.on("disconnect", () => {
         console.log("Disconnected from socket server");
@@ -137,6 +141,21 @@ function Chat() {
     }
   };
 
+  // const getAllUploadedFileNames = async () => {
+  //   try {
+  //     const {data} = await axios.get(
+  //       `${SOCKET_SERVER_URL}/get-files`);
+  //     console.log("Files: ", data);
+  //   } catch (error) {
+  //     alert("Error getting file list");
+  //     console.error("Error getting file list: ", error);
+  //   }
+  // };
+
+  // useEffect(()=>{
+  //   getAllUploadedFileNames()
+  // },[])
+
   return (
     <div className="flex flex-col h-[100vh] bg-white text-black items-center">
       {Object.keys(selectedMsgChunks).length > 0 && (
@@ -152,7 +171,7 @@ function Chat() {
             </div>
             <div className="flex items-center gap-2">
               <div style={{ fontFamily: "PoorStory" }}>Prompt</div>
-              <div className="py-1 px-4 bg-gray-200 flex-1 rounded-lg max-h-[10vh] text-wrap text-sm overflow-y-scroll">
+              <div className="py-1 px-4 bg-gray-200 border border-gray-300 border border-gray-300 flex-1 rounded-lg max-h-[10vh] text-wrap text-sm overflow-y-scroll">
                 {selectedMsgChunks.chunks[0].Question}
               </div>
             </div>
@@ -175,24 +194,25 @@ function Chat() {
                 ))}
               </div>
             </div>
-            <div className="bg-gray-200 w-full rounded max-h-[40vh] py-1 px-4 text-wrap text-sm overflow-y-scroll">
+            <div className="bg-gray-200 border border-gray-300 w-full rounded max-h-[40vh] py-1 px-4 text-wrap text-sm overflow-y-scroll">
               <div>
-                {selectedMsgChunks.chunks[currentChunkIndex]["Passage 1"]}
                 {selectedMsgChunks.chunks[currentChunkIndex]["Passage 1"]}
               </div>
             </div>
             <div className="flex items-center gap-1 mt-5 justify-end font-semibold">
-                  <div style={{ fontFamily: "PoorStory" }} className="text-base" >Relevance Score:</div>
-                <div className="bg-green-700 text-white text-xs px-2 py-1 rounded">
-                  <div>
-                    {
-                      selectedMsgChunks.chunks[currentChunkIndex][
-                        "Relevance Score 1"
-                      ]
-                    }
-                  </div>
+              <div style={{ fontFamily: "PoorStory" }} className="text-base">
+                Relevance Score:
+              </div>
+              <div className="bg-green-700 text-white text-xs px-2 py-1 rounded">
+                <div>
+                  {
+                    selectedMsgChunks.chunks[currentChunkIndex][
+                      "Relevance Score 1"
+                    ]
+                  }
                 </div>
               </div>
+            </div>
           </div>
         </div>
       )}
