@@ -9,7 +9,6 @@ export default function BotMessage({ message, onChunksClick }) {
     athropic: 'text-amber-600', 'gpt3.5': 'text-green-700', 'gpt4': 'text-blue-900'
   }
 
-  console.log(message);
   return (
     <div className="flex w-full text-gray-500">
       <div className="h-6 w-6 flex justify-center items-center self-start rounded-full overflow-hidden border border-gray-500 bg-white">

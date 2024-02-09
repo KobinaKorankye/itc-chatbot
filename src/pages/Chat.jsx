@@ -63,38 +63,33 @@ function Chat() {
   }, [messages, typingIndicator]);
 
   useEffect(() => {
-    try {
+    if (taskId) {
       const sse = new EventSource(`${SOCKET_SERVER_URL}/task-status/${taskId}`);
-      if (taskId) {
-        function getRealtimeData(data) {
-          if (data.status == "Processing") {
-            setTaskProgressDisplay(
-              "Processing: " + parseInt((data.current * 100) / data.total) + "%"
-            );
-          } else if (data.status == "Task completed") {
-            setTaskProgressDisplay("Done");
-            setTaskId("");
-          } else {
-            setTaskProgressDisplay(data.status);
-          }
-          console.log(data);
+      function getRealtimeData(data) {
+        if (data.status == "Processing") {
+          setTaskProgressDisplay(
+            "Processing: " + parseInt((data.current * 100) / data.total) + "%"
+          );
+        } else if (data.status == "Task completed") {
+          setTaskProgressDisplay("Done");
+          sse.close()
+          setTaskId("");
+        } else {
+          setTaskProgressDisplay(data.status);
         }
-        sse.onmessage = (e) => {
-          getRealtimeData(JSON.parse(e.data));
-        };
-        sse.onerror = (e) => {
-          // error log here
-          console.log(e);
-          sse.close();
-        };
-        return () => {
-          sse.close();
-        };
-      } else {
-        sse.close();
+        console.log(data);
       }
-    } catch (error) {
-      console.log(error);
+      sse.onmessage = (e) => {
+        getRealtimeData(JSON.parse(e.data));
+      };
+      sse.onerror = (e) => {
+        // error log here
+        console.log('Test phrase for error: ',e);
+        sse.close();
+      };
+      return () => {
+        sse.close();
+      };
     }
   }, [taskId]);
 
