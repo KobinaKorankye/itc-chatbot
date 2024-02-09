@@ -63,32 +63,38 @@ function Chat() {
   }, [messages, typingIndicator]);
 
   useEffect(() => {
-    if (taskId) {
+    try {
       const sse = new EventSource(`${SOCKET_SERVER_URL}/task-status/${taskId}`);
-      function getRealtimeData(data) {
-        if (data.status == "Processing") {
-          setTaskProgressDisplay("Processing: "+
-            parseInt((data.current * 100) / data.total) + "%"
-          );
-        } else if(data.status == 'Task completed'){
-          setTaskProgressDisplay('Done')
-          setTaskId("")
-        } else {
-          setTaskProgressDisplay(data.status);
+      if (taskId) {
+        function getRealtimeData(data) {
+          if (data.status == "Processing") {
+            setTaskProgressDisplay(
+              "Processing: " + parseInt((data.current * 100) / data.total) + "%"
+            );
+          } else if (data.status == "Task completed") {
+            setTaskProgressDisplay("Done");
+            setTaskId("");
+          } else {
+            setTaskProgressDisplay(data.status);
+          }
+          console.log(data);
         }
-        console.log(data);
+        sse.onmessage = (e) => {
+          getRealtimeData(JSON.parse(e.data));
+        };
+        sse.onerror = (e) => {
+          // error log here
+          console.log(e);
+          sse.close();
+        };
+        return () => {
+          sse.close();
+        };
+      } else {
+        sse.close();
       }
-      sse.onmessage = (e) => {
-        getRealtimeData(JSON.parse(e.data));
-      };
-      sse.onerror = (e) => {
-        // error log here
-        console.log(e);
-        sse.close();
-      };
-      return () => {
-        sse.close();
-      };
+    } catch (error) {
+      console.log(error);
     }
   }, [taskId]);
 
@@ -222,7 +228,6 @@ function Chat() {
           file: file.name,
           index: `${Date.now()}`,
           split_size: 3,
-          csrf_token: csrfToken,
         });
 
         setTaskId(data.task_id);
@@ -315,7 +320,7 @@ function Chat() {
       )}
 
       <div className="w-full h-full flex">
-        <div className="-md:hidden flex flex-col h-full bg-sky-900 w-[23%]">
+        <div className="-md:hidden flex flex-col h-full bg-sky-900 w-[20%]">
           <div className="flex m-3 p-2 items-center text-sky-100 cursor-pointer bg-sky-800 hover:bg-sky-700 rounded-lg">
             <div className="bg-white p-1 rounded-full">
               <img src={ITCLogo} className="h-5 rounded-full" />
@@ -373,7 +378,9 @@ function Chat() {
                 Files in S3
               </div>
               {uploadedFileNames.map((file, index) => (
-                  <div className="text-white mx-2 p-2 py-1 rounded text-sm truncate">{index+1}. {file}</div>
+                <div className="text-white mx-2 p-2 py-1 rounded text-sm truncate">
+                  {index + 1}. {file}
+                </div>
               ))}
             </div>
           )}
@@ -464,7 +471,7 @@ function Chat() {
           <div className="w-[20%] flex flex-col items-center">
             <div
               style={{ fontFamily: "BlackOps" }}
-              className="text-[24px] text-gray-700 font-semibold mt-10"
+              className="text-[20px] text-gray-700 font-semibold mt-10"
             >
               ITC Agent
             </div>
@@ -519,9 +526,11 @@ function Chat() {
               </div>
             )}
 
-            {(taskId || taskProgressDisplay=="Done") && (
+            {(taskId || taskProgressDisplay == "Done") && (
               <div
-                className={`flex font-semibold m-5 p-2 px-6 items-center border text-xs mt-20 rounded`}
+                className={`${
+                  taskProgressDisplay == "Done" ? "opacity-0" : "opacity-100"
+                } duration-500 flex font-semibold m-5 p-2 px-6 items-center border text-xs mt-20 rounded`}
               >
                 <div>{taskProgressDisplay}</div>
               </div>
