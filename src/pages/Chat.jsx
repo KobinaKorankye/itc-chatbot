@@ -24,17 +24,33 @@ import axios from "axios";
 
 const SOCKET_SERVER_URL = "http://54.246.247.31:8000";
 
+const SIDE_MENUS = {
+  FILES: "files",
+  HISTORY: "history",
+};
+
 function Chat() {
   const [connected, setConnected] = useState(false);
   const [message, setMessage] = useState("");
   const [selectedMsgChunks, setSelectedMessageChunks] = useState({});
   const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
-  const { user } = useContext(AppContext);
-  const [connectionId, setConnectionId] = useState("");
 
+  const [uploading, setUpLoading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(true);
+  const [taskId, setTaskId] = useState("");
+  const [showErrorIndicator, setShowErrorIndicator] = useState(false);
+  const [showCSRFButton, setShowCSRFButton] = useState(false);
+
+  const { user } = useContext(AppContext);
+
+  const [csrfToken, setCSRFToken] = useState("");
+  const [uploadedFileNames, setUploadedFileNames] = useState([]);
+  const [visibleSideMenu, setVisibleSideMenu] = useState(SIDE_MENUS.HISTORY);
   const [socket, setSocket] = useState(null);
+  const [models, setModels] = useState(["athropic", "gpt3.5", "gpt4"]);
   const [chunks, setChunks] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [taskProgressDisplay, setTaskProgressDisplay] = useState([]);
   const [typingIndicator, setTypingIndicator] = useState(false);
 
   const bottomRef = useRef(null);
@@ -47,14 +63,42 @@ function Chat() {
   }, [messages, typingIndicator]);
 
   useEffect(() => {
+    if (taskId) {
+      const sse = new EventSource(`${SOCKET_SERVER_URL}/task-status/${taskId}`);
+      function getRealtimeData(data) {
+        if (data.status == "Processing") {
+          setTaskProgressDisplay("Processing: "+
+            parseInt((data.current * 100) / data.total) + "%"
+          );
+        } else if(data.status == 'Task completed'){
+          setTaskProgressDisplay('Done')
+          setTaskId("")
+        } else {
+          setTaskProgressDisplay(data.status);
+        }
+        console.log(data);
+      }
+      sse.onmessage = (e) => {
+        getRealtimeData(JSON.parse(e.data));
+      };
+      sse.onerror = (e) => {
+        // error log here
+        console.log(e);
+        sse.close();
+      };
+      return () => {
+        sse.close();
+      };
+    }
+  }, [taskId]);
+
+  useEffect(() => {
     // Connect to Socket.IO server
     const newSocket = io(SOCKET_SERVER_URL);
     try {
-      newSocket.on("connection", (data) => {
+      newSocket.on("connect", (data) => {
         console.log("Connected to socket server");
         setConnected(true);
-        setConnectionId(data.connection_id);
-        console.log(data);
       });
 
       newSocket.on("typing_indicator", () => {
@@ -62,10 +106,11 @@ function Chat() {
         console.log("typing");
       });
 
-      newSocket.on("message_from_llm", (message) => {
+      newSocket.on("model_response", (message) => {
         const msg = {
-          text: message.message,
+          text: message.content,
           incoming: true,
+          model: message.model,
         };
         setMessages((prevMessages) => [msg, ...prevMessages]);
         console.log("Message from llm: ", message);
@@ -76,9 +121,9 @@ function Chat() {
         setChunks((prevChunks) => [chunks, ...prevChunks]);
         console.log(chunks);
       });
-      
+
       newSocket.on("error", (message) => {
-        console.log('Error Event: ', message);
+        console.log("Error Event: ", message);
       });
 
       newSocket.on("disconnect", () => {
@@ -95,7 +140,7 @@ function Chat() {
     return () => newSocket.disconnect();
   }, []);
 
-  const sendMessage = (message, connectionId, index, size) => {
+  const sendMessage = (message, index, size) => {
     if (socket) {
       const msg = {
         text: message,
@@ -104,24 +149,27 @@ function Chat() {
       setMessages((prevMessages) => [msg, ...prevMessages]);
       socket.emit("chat", {
         message,
-        connection_id: connectionId,
         index: index || "search-chatbot",
+        models: ["gpt4"],
         size: size || 3,
       });
       setMessage("");
     }
   };
 
-  const onFileSelect = async (event) => {
+  const onFileSelectUploadIndexOnly = async (event) => {
     const file = event.target.files[0];
 
     console.log("Trying to upload");
     if (file) {
       console.log("Trying to upload file");
       const formData = new FormData();
+      formData.append("csrf_token", csrfToken);
       formData.append("index", `${Date.now()}`);
-      formData.append("data", file); // The key 'file' should be according to your server's expected field.
+      formData.append("data", file);
+      // formData.append("split_size", 3);
 
+      setUpLoading(true);
       try {
         const response = await axios.post(
           `${SOCKET_SERVER_URL}/upload`,
@@ -138,23 +186,72 @@ function Chat() {
         alert("Error uploading");
         console.error("Error uploading file", error);
       }
+      setUpLoading(false);
     }
   };
 
-  // const getAllUploadedFileNames = async () => {
-  //   try {
-  //     const {data} = await axios.get(
-  //       `${SOCKET_SERVER_URL}/get-files`);
-  //     console.log("Files: ", data);
-  //   } catch (error) {
-  //     alert("Error getting file list");
-  //     console.error("Error getting file list: ", error);
-  //   }
-  // };
+  const onFileSelectUploadAndStoreAndIndex = async (event) => {
+    const file = event.target.files[0];
 
-  // useEffect(()=>{
-  //   getAllUploadedFileNames()
-  // },[])
+    console.log("Trying to upload");
+    if (file) {
+      console.log("Trying to upload file");
+      let formData = new FormData();
+      formData.append("data", file);
+      formData.append("csrf_token", csrfToken);
+
+      setUpLoading(true);
+      try {
+        const response = await axios.post(
+          `${SOCKET_SERVER_URL}/upload-s3`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+        console.log("File uploaded successfully", response.data);
+        getAllUploadedFileNames();
+
+        // formData = new FormData();
+        // formData.append("file", file.name);
+        // formData.append("index", `${Date.now()}`);
+        // formData.append("csrf_token", csrfToken);
+        const { data } = await axios.post(`${SOCKET_SERVER_URL}/index`, {
+          file: file.name,
+          index: `${Date.now()}`,
+          split_size: 3,
+          csrf_token: csrfToken,
+        });
+
+        setTaskId(data.task_id);
+
+        console.log("File indexed successfully", data);
+        setUploadSuccess(true);
+      } catch (error) {
+        alert("Error");
+        console.error("Error: ", error);
+        setUploadSuccess(false);
+      }
+      setUpLoading(false);
+    }
+  };
+
+  const getAllUploadedFileNames = async () => {
+    try {
+      const { data } = await axios.get(`${SOCKET_SERVER_URL}/get-files`);
+      setUploadedFileNames(data.files);
+      console.log("Files: ", data.files);
+    } catch (error) {
+      alert("Error getting file list");
+      console.error("Error getting file list: ", error);
+    }
+  };
+
+  useEffect(() => {
+    getAllUploadedFileNames();
+  }, [uploadSuccess]);
 
   return (
     <div className="flex flex-col h-[100vh] bg-white text-black items-center">
@@ -216,8 +313,9 @@ function Chat() {
           </div>
         </div>
       )}
+
       <div className="w-full h-full flex">
-        <div className="-md:hidden flex flex-col h-full bg-sky-900 w-[20%]">
+        <div className="-md:hidden flex flex-col h-full bg-sky-900 w-[23%]">
           <div className="flex m-3 p-2 items-center text-sky-100 cursor-pointer bg-sky-800 hover:bg-sky-700 rounded-lg">
             <div className="bg-white p-1 rounded-full">
               <img src={ITCLogo} className="h-5 rounded-full" />
@@ -236,13 +334,49 @@ function Chat() {
             />
           </div>
 
-          <div className="text-xs font-semibold ml-4 text-gray-300 mt-5">
-            Today
+          <div className="flex m-3 items-center text-sky-100 cursor-pointer bg-sky-800 rounded-lg">
+            <div
+              onClick={() => setVisibleSideMenu(SIDE_MENUS.FILES)}
+              className={`text-white ${
+                visibleSideMenu == SIDE_MENUS.FILES ? "bg-sky-500/80" : ""
+              } rounded-lg text-center p-2 uppercase text-xs flex-1`}
+            >
+              Files
+            </div>
+            <div
+              onClick={() => setVisibleSideMenu(SIDE_MENUS.HISTORY)}
+              className={`text-white ${
+                visibleSideMenu == SIDE_MENUS.HISTORY ? "bg-sky-500/80" : ""
+              } rounded-lg text-center p-2 uppercase text-xs flex-1`}
+            >
+              History
+            </div>
           </div>
 
-          <div className="flex m-3 p-2 items-center text-sky-100 cursor-pointer bg-sky-800 hover:bg-sky-700 rounded-lg">
-            <div className="text-white ml-2 text-sm">First Agent Test Chat</div>
-          </div>
+          {visibleSideMenu == SIDE_MENUS.HISTORY && (
+            <div>
+              <div className="text-xs font-semibold ml-4 text-gray-300 mt-5">
+                Today
+              </div>
+
+              <div className="flex m-3 p-2 items-center text-sky-100 cursor-pointer bg-sky-800 hover:bg-sky-700 rounded-lg">
+                <div className="text-white ml-2 text-sm">
+                  First Agent Test Chat
+                </div>
+              </div>
+            </div>
+          )}
+
+          {visibleSideMenu == SIDE_MENUS.FILES && (
+            <div>
+              <div className="text-xs font-semibold ml-4 mb-5 text-gray-300 mt-5">
+                Files in S3
+              </div>
+              {uploadedFileNames.map((file, index) => (
+                  <div className="text-white mx-2 p-2 py-1 rounded text-sm truncate">{index+1}. {file}</div>
+              ))}
+            </div>
+          )}
 
           <div className="flex mt-auto p-5 items-center text-sky-100 cursor-pointer hover:bg-sky-700 rounded-lg">
             <div className="h-[35px] w-[35px] uppercase flex font-semibold text-white text-lg justify-center items-center rounded-full overflow-hidden border border-gray-700 bg-zinc-500">
@@ -280,7 +414,7 @@ function Chat() {
             </div> */}
           </div>
           <div className="flex flex-col items-center h-[85vh] w-full">
-            <div className="flex flex-col w-[80%] h-[78vh] overflow-y-scroll py-2">
+            <div className="flex flex-col w-[77%] h-[78vh] overflow-y-scroll py-2">
               <div className="flex flex-col-reverse gap-2 flex-grow">
                 <div ref={bottomRefMobile}></div>
                 {typingIndicator && (
@@ -296,7 +430,7 @@ function Chat() {
                           setSelectedMessageChunks(chunks[parseInt(index / 2)])
                         }
                         key={index}
-                        message={message.text}
+                        message={message}
                       />
                     );
                   } else {
@@ -313,9 +447,9 @@ function Chat() {
                 setMessage(e.target.value);
               }}
               onIconClick={() => {
-                sendMessage(message, connectionId);
+                sendMessage(message);
               }}
-              onFileSelect={onFileSelect}
+              onFileSelect={onFileSelectUploadAndStoreAndIndex}
               boxClassName={"w-[80%]"}
               placeholder={"Message ITC Agent"}
             />
@@ -328,15 +462,6 @@ function Chat() {
         {/* WEB */}
         <div className="-md:hidden flex h-full w-full">
           <div className="w-[20%] flex flex-col items-center">
-            {/* <div className="ml-1 bg-white p-2 rounded-xl">
-              <img src={ITCLogo} className="h-10 rounded-xl" />
-            </div> */}
-            {/* <div className="bg-white ml-5 p-2 rounded-xl">
-              <img
-                src={ChangoLogo}
-                className="h-10"
-              />
-            </div> */}
             <div
               style={{ fontFamily: "BlackOps" }}
               className="text-[24px] text-gray-700 font-semibold mt-10"
@@ -346,10 +471,9 @@ function Chat() {
             <div
               className={`flex m-5 p-2 items-center border ${
                 connected ? "border-teal-500" : "border-amber-500"
-              } rounded-lg`}
+              } rounded`}
             >
               <div
-                // style={{ fontFamily: "Ubuntu" }}
                 className={`${
                   connected ? "text-teal-700" : "text-amber-700"
                 } ml-2 text-xs`}
@@ -358,18 +482,51 @@ function Chat() {
               </div>
               {connected ? (
                 <FontAwesomeIcon
-                  className="text-teal-600 mx-3"
+                  className="text-teal-600 ml-5"
                   size="1x"
                   icon={faCheck}
                 />
               ) : (
                 <FontAwesomeIcon
-                  className="text-amber-600 mx-3"
+                  className="text-amber-600 ml-5"
                   size="1x"
                   icon={faEllipsis}
                 />
               )}
             </div>
+
+            {uploading && (
+              <div
+                className={`flex font-semibold m-5 p-2 px-6 items-center border text-xs mt-20 ${
+                  uploading
+                    ? "border-amber-600 text-amber-600"
+                    : uploadSuccess
+                    ? "border-teal-700 text-teal-700"
+                    : "border-red-600 text-red-600"
+                } rounded`}
+              >
+                <div
+                  className={`${
+                    uploading ? "opacity-100" : "opacity-0"
+                  } duration-500`}
+                >
+                  {uploading
+                    ? "uploading..."
+                    : uploadSuccess
+                    ? "upload successful"
+                    : "upload failed"}
+                </div>
+              </div>
+            )}
+
+            {(taskId || taskProgressDisplay=="Done") && (
+              <div
+                className={`flex font-semibold m-5 p-2 px-6 items-center border text-xs mt-20 rounded`}
+              >
+                <div>{taskProgressDisplay}</div>
+              </div>
+            )}
+
             {/* <div className="bg-white ml-5 p-2 rounded-xl">
               <img
                 src={TransflowLogo}
@@ -394,7 +551,7 @@ function Chat() {
                         onChunksClick={() =>
                           setSelectedMessageChunks(chunks[parseInt(index / 2)])
                         }
-                        message={message.text}
+                        message={message}
                       />
                     );
                   } else {
@@ -411,9 +568,9 @@ function Chat() {
                 setMessage(e.target.value);
               }}
               onIconClick={() => {
-                sendMessage(message, connectionId);
+                sendMessage(message);
               }}
-              onFileSelect={onFileSelect}
+              onFileSelect={onFileSelectUploadAndStoreAndIndex}
               boxClassName={"w-[80%]"}
               placeholder={"Message ITC Agent"}
             />
