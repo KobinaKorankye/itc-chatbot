@@ -221,7 +221,7 @@ function Chat() {
         // formData.append("csrf_token", csrfToken);
         const { data } = await axios.post(`${SOCKET_SERVER_URL}/index`, {
           file: file.name,
-          index: `${Date.now()}`,
+          index: `search-chatbot`,
           split_size: 3,
         });
 
