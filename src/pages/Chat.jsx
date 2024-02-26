@@ -657,11 +657,11 @@ function Chat() {
               </div>
               <div className="bg-green-700 text-white text-xs px-2 py-1 rounded">
                 <div>
-                  {
-                    parseFloat(selectedMsgChunks.chunks[currentChunkIndex][
+                  {parseFloat(
+                    selectedMsgChunks.chunks[currentChunkIndex][
                       "Relevance Score 1"
-                    ])
-                  }
+                    ]
+                  )}
                 </div>
               </div>
             </div>
@@ -739,21 +739,33 @@ function Chat() {
                     <Loader height={80} width={80} />
                   </div>
                 )}
-                {messages[selectedModel].map((message, index) => {
-                  if (message.incoming) {
-                    return (
-                      <BotMessage
-                        onChunksClick={() =>
-                          setSelectedMessageChunks(chunks[parseInt(index / 2)])
-                        }
-                        key={index}
-                        message={message}
-                      />
-                    );
-                  } else {
-                    return <UserMessage key={index} message={message.text} />;
-                  }
-                })}
+                {messages[selectedModel].length ? (
+                  messages[selectedModel].map((message, index) => {
+                    if (message.incoming) {
+                      return (
+                        <BotMessage
+                          onChunksClick={() =>
+                            setSelectedMessageChunks(
+                              chunks[parseInt(index / 2)]
+                            )
+                          }
+                          key={index}
+                          message={message}
+                        />
+                      );
+                    } else {
+                      return <UserMessage key={index} message={message.text} />;
+                    }
+                  })
+                ) : (
+                  <div className="flex-1 bg-red-200">
+                    <Loader
+                      width={315}
+                      height={400}
+                      animationName={"itc_agent"}
+                    />
+                  </div>
+                )}
               </div>
             </div>
             <MessageInput
@@ -852,21 +864,33 @@ function Chat() {
                     <Loader height={80} width={80} />
                   </div>
                 )}
-                {messages[selectedModel].map((message, index) => {
-                  if (message.incoming) {
-                    return (
-                      <BotMessage
-                        key={index}
-                        onChunksClick={() =>
-                          setSelectedMessageChunks(chunks[parseInt(index / 2)])
-                        }
-                        message={message}
-                      />
-                    );
-                  } else {
-                    return <UserMessage key={index} message={message.text} />;
-                  }
-                })}
+                {messages[selectedModel].length ? (
+                  messages[selectedModel].map((message, index) => {
+                    if (message.incoming) {
+                      return (
+                        <BotMessage
+                          onChunksClick={() =>
+                            setSelectedMessageChunks(
+                              chunks[parseInt(index / 2)]
+                            )
+                          }
+                          key={index}
+                          message={message}
+                        />
+                      );
+                    } else {
+                      return <UserMessage key={index} message={message.text} />;
+                    }
+                  })
+                ) : (
+                  <div className="flex-1 flex items-center justify-center">
+                    <Loader
+                      width={252}
+                      height={320}
+                      animationName={"itc_agent"}
+                    />
+                  </div>
+                )}
               </div>
             </div>
             <MessageInput
