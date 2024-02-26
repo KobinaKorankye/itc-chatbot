@@ -22,7 +22,7 @@ export default function BotMessage({ message, onChunksClick }) {
         {/* <div style={{ fontFamily: "ShareTech" }}>{message}</div> */}
         <div style={{ fontFamily: "Ubuntu" }}>
           {/* <Markdown remarkPlugins={[remarkGfm]}>{message}</Markdown> */}
-          <MarkdownParser text={message.text.content} />
+          {message?.text?.content ? <MarkdownParser text={message.text.content} /> : <MarkdownParser text={message?.text} />}
           {/* <Markdown remarkPlugins={[remarkGfm]}>{message}</Markdown> */}
         </div>
         <div className="flex mt-2 cursor-pointer">
