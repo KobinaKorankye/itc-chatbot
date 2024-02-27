@@ -89,7 +89,7 @@ function Chat() {
   const bottomRefMobile = useRef(null);
 
   const [folderFiles, setFolderFiles] = useState({});
-  const [folderForUpload, setFolderForUpload] = useState("root(no folder)");
+  const [folderForUpload, setFolderForUpload] = useState("chatbot-files");
 
   const [talkingTo, setTalkingTo] = useState(
     "chatbot-files/extracted_pages.zip"
@@ -257,62 +257,35 @@ function Chat() {
     }
   };
 
-  const onFileSelectUploadAndStoreAndIndex = async (event) => {
-    const file = event.target.files[0];
-
-    console.log("Trying to upload");
-    if (file) {
-      console.log("Trying to upload file");
-      let formData = new FormData();
-      formData.append("data", file);
-      formData.append("csrf_token", csrfToken);
-
-      setUpLoading(true);
-      try {
-        const response = await axios.post(
-          `${SOCKET_SERVER_URL}/upload-s3`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
-        console.log("File uploaded successfully", response.data);
-        getAllUploadedFileNames();
-
-        // formData = new FormData();
-        // formData.append("file", file.name);
-        // formData.append("index", `${Date.now()}`);
-        // formData.append("csrf_token", csrfToken);
-        const { data } = await axios.post(`${SOCKET_SERVER_URL}/index`, {
-          file: file.name,
-          index: `search-chatbot`,
-          split_size: 3,
-        });
-
-        setTaskId(data.task_id);
-
-        console.log("File indexed successfully", data);
-        setUploadSuccess(true);
-      } catch (error) {
-        alert("Error");
-        console.error("Error: ", error);
-        setUploadSuccess(false);
-      }
-      setUpLoading(false);
-    }
-  };
-
   const onFileUpload = async () => {
     const file = selectedFile;
 
+    if((folderForUpload == 'Create a new folder') && (newFolderName.trim() == "")){
+      toastShow(
+        "Cannot create a new folder without specifying a name",
+        "bg-red-600 text-white font-semibold"
+      );
+      return
+    }else if(newFolderName.trim() == 'chatbot-files'){
+      toastShow(
+        "Cannot use reserved folder name: 'chatbot-files'",
+        "bg-red-600 text-white font-semibold"
+      );
+      return
+    }
+
     console.log("Trying to upload");
     if (file) {
       console.log("Trying to upload file");
       let formData = new FormData();
       formData.append("data", file);
-      formData.append("csrf_token", csrfToken);
+
+      let foldername = null
+
+      if (newFolderName || (folderForUpload && folderForUpload !== 'chatbot-files')) {
+        foldername = newFolderName?newFolderName.trim():folderForUpload
+        formData.append("folder_name", foldername);
+      }
 
       setUpLoading(true);
       try {
@@ -328,15 +301,17 @@ function Chat() {
         console.log("File uploaded successfully", response.data);
         getAllUploadedFileNames();
 
-        // formData = new FormData();
-        // formData.append("file", file.name);
-        // formData.append("index", `${Date.now()}`);
-        // formData.append("csrf_token", csrfToken);
-        const { data } = await axios.post(`${SOCKET_SERVER_URL}/index`, {
-          file: file.name,
-          index: `search-chatbot`,
-          split_size: 3,
-        });
+        const body = folderForUpload !== 'chatbot-files'
+          ? {
+              file: foldername,
+              split_size: 3,
+            }
+          : {
+              file: "chatbot-files/" + file.name,
+              split_size: 3,
+            };
+
+        const { data } = await axios.post(`${SOCKET_SERVER_URL}/index`, body);
 
         setTaskId(data.task_id);
 
@@ -426,6 +401,7 @@ function Chat() {
   useEffect(() => {
     if (!showDocuments) {
       setSelectedFile(null);
+      setFolderForUpload("chatbot-files");
       setNewFolderName("");
     }
   }, [showDocuments]);
@@ -541,12 +517,7 @@ function Chat() {
                   onChange={(e) => {
                     setFolderForUpload(e.target.value);
                   }}
-                  options={[
-                    "Create a new folder",
-                    "root(no folder)",
-                    ,
-                    ...Object.keys(folderFiles),
-                  ]}
+                  options={["Create a new folder", ...Object.keys(folderFiles)]}
                 />
                 {folderForUpload == "Create a new folder" && (
                   <input
@@ -572,7 +543,7 @@ function Chat() {
                   style={{ fontFamily: "Ubuntu" }}
                   className="flex text-sm border border-gray-600 hover:text-white hover:bg-gray-900 py-2 px-4 rounded focus:outline-none focus:shadow-outline scale-90"
                 >
-                  <div className="mr-4">upload</div>
+                  <div className="mr-4">{uploading?'...':'upload'}</div>
                   <div className="">
                     <FontAwesomeIcon icon={faUpload} />
                   </div>
@@ -758,11 +729,11 @@ function Chat() {
                     }
                   })
                 ) : (
-                  <div className="flex-1 bg-red-200">
+                  <div className="flex-1">
                     <Loader
                       width={315}
                       height={400}
-                      animationName={"itc_agent"}
+                      animationName={"itc_bot"}
                     />
                   </div>
                 )}
@@ -778,7 +749,7 @@ function Chat() {
               onIconClick={() => {
                 sendMessage(message);
               }}
-              onFileSelect={onFileSelectUploadAndStoreAndIndex}
+              onFileSelect={null}
               boxClassName={"w-[80%]"}
               placeholder={"Message ITC Agent"}
             />
@@ -887,7 +858,7 @@ function Chat() {
                     <Loader
                       width={252}
                       height={320}
-                      animationName={"itc_agent"}
+                      animationName={"itc_bot"}
                     />
                   </div>
                 )}
@@ -903,7 +874,7 @@ function Chat() {
               onIconClick={() => {
                 sendMessage(message);
               }}
-              onFileSelect={onFileSelectUploadAndStoreAndIndex}
+              onFileSelect={null}
               boxClassName={"w-[80%]"}
               placeholder={"Message ITC Agent"}
             />

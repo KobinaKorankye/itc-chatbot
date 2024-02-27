@@ -3,9 +3,11 @@ import Lottie from 'react-lottie';
 import chat_loading from './chat_loading_dark.json'
 import pulse_red from './pulse_red.json'
 import itc_agent from './itc_agent.json'
+import itc_bothead from './itc_bothead.json'
+import itc_bot from './itc_bot.json'
 
 const animations = {
-  itc_agent, chat_loading, pulse: pulse_red
+  itc_agent, chat_loading, pulse: pulse_red, itc_bothead, itc_bot
 }
 
 export default function Loader({ width, height, animationName}) {
