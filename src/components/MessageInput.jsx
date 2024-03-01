@@ -33,13 +33,13 @@ export default function MessageInput({
             accept="application/zip application/msword application/pdf application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             placeholder="No zip file selected"
           /> */}
-          <label htmlFor="file">
+          <div>
             <FontAwesomeIcon
               className="text-black cursor-pointer"
               size="lg"
               icon={faPaperclip}
             />
-          </label>
+          </div>
         </div>
         <input
           type={type}
