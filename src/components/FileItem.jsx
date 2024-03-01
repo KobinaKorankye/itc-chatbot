@@ -45,12 +45,16 @@ export default function FileItem({
 
   return (
     <div className="group flex hover:bg-gray-100 cursor-pointer items-center h-[40px] border-b-2 border-gray-600/20">
-      {talkingTo && (
+      {(talkingTo || talkingTo==="")  && (
         <input
           className="cursor-pointer"
           checked={talkingTo == fullname}
           onChange={(e) => {
-            setTalkingTo(fullname);
+            if(talkingTo == fullname){
+              setTalkingTo("");
+            }else{
+              setTalkingTo(fullname);
+            }
           }}
           type="checkbox"
         />

@@ -41,7 +41,11 @@ export default function FolderItem({
           className="cursor-pointer"
           checked={talkingTo == name}
           onChange={(e) => {
-            setTalkingTo(name);
+            if(talkingTo == name){
+              setTalkingTo("");
+            }else{
+              setTalkingTo(name);
+            }
           }}
           type="checkbox"
         />

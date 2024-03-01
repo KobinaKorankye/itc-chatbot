@@ -13,6 +13,7 @@ import {
   faFile,
   faFileAlt,
   faFileCirclePlus,
+  faFileUpload,
   faFolder,
   faNoteSticky,
   faPenClip,
@@ -91,9 +92,13 @@ function Chat() {
   const [folderFiles, setFolderFiles] = useState({});
   const [folderForUpload, setFolderForUpload] = useState("chatbot-files");
 
-  const [talkingTo, setTalkingTo] = useState(
-    "chatbot-files/extracted_pages.zip"
-  );
+  const [talkingTo, setTalkingTo] = useState("");
+
+  useEffect(() => {
+    if (Object.keys(folderFiles).length == 0) {
+      setTalkingTo("");
+    }
+  }, [folderFiles]);
 
   useEffect(() => {
     // Scroll to the bottom of the div
@@ -260,18 +265,21 @@ function Chat() {
   const onFileUpload = async () => {
     const file = selectedFile;
 
-    if((folderForUpload == 'Create a new folder') && (newFolderName.trim() == "")){
+    if (
+      folderForUpload == "Create a new folder" &&
+      newFolderName.trim() == ""
+    ) {
       toastShow(
         "Cannot create a new folder without specifying a name",
         "bg-red-600 text-white font-semibold"
       );
-      return
-    }else if(newFolderName.trim() == 'chatbot-files'){
+      return;
+    } else if (newFolderName.trim() == "chatbot-files") {
       toastShow(
         "Cannot use reserved folder name: 'chatbot-files'",
         "bg-red-600 text-white font-semibold"
       );
-      return
+      return;
     }
 
     console.log("Trying to upload");
@@ -280,10 +288,13 @@ function Chat() {
       let formData = new FormData();
       formData.append("data", file);
 
-      let foldername = null
+      let foldername = null;
 
-      if (newFolderName || (folderForUpload && folderForUpload !== 'chatbot-files')) {
-        foldername = newFolderName?newFolderName.trim():folderForUpload
+      if (
+        newFolderName ||
+        (folderForUpload && folderForUpload !== "chatbot-files")
+      ) {
+        foldername = newFolderName ? newFolderName.trim() : folderForUpload;
         formData.append("folder_name", foldername);
       }
 
@@ -298,29 +309,33 @@ function Chat() {
             },
           }
         );
-        console.log("File uploaded successfully", response.data);
+        toastShow(
+          "Successfully uploaded document",
+          "bg-green-600 text-white font-semibold"
+        );
         getAllUploadedFileNames();
 
-        const body = folderForUpload !== 'chatbot-files'
-          ? {
-              file: foldername,
-              split_size: 3,
-            }
-          : {
-              file: "chatbot-files/" + file.name,
-              split_size: 3,
-            };
+        const body =
+          folderForUpload !== "chatbot-files"
+            ? {
+                file: foldername,
+                split_size: 3,
+              }
+            : {
+                file: "chatbot-files/" + file.name,
+                split_size: 3,
+              };
 
         const { data } = await axios.post(`${SOCKET_SERVER_URL}/index`, body);
 
         setTaskId(data.task_id);
 
-        console.log("File indexed successfully", data);
+        setFolderForUpload("chatbot-files");
+        setNewFolderName("");
         setUploadSuccess(true);
       } catch (error) {
-        alert("Error");
+        toastShow("Upload failed", "bg-red-600 text-white font-semibold");
         console.error("Error: ", error);
-        setUploadSuccess(false);
       }
       setUpLoading(false);
       setSelectedFile(null);
@@ -350,15 +365,47 @@ function Chat() {
   };
 
   const deleteDoc = async (name) => {
+    const firstIndex = name.indexOf("/");
+    const foldername = name.substring(0, firstIndex);
+    const willBeEmptyAfterDelete = folderFiles[foldername].length == 1;
     try {
-      const { data } = await axios.delete(`${SOCKET_SERVER_URL}/files`, {
-        data: { file: name },
-      });
-      getAllUploadedFileNames();
-      toastShow(
-        "Successfully deleted document",
-        "bg-green-600 text-white font-semibold"
-      );
+      if (willBeEmptyAfterDelete) {
+        const { data } = await axios.delete(`${SOCKET_SERVER_URL}/files`, {
+          data: { file: `${foldername}/*` },
+        });
+        getAllUploadedFileNames();
+        toastShow(
+          "Successfully deleted document",
+          "bg-green-600 text-white font-semibold"
+        );
+      } else if (foldername !== "chatbot-files") {
+        const response = await axios.delete(`${SOCKET_SERVER_URL}/files`, {
+          data: { file: name },
+        });
+        getAllUploadedFileNames();
+        toastShow(
+          "Successfully deleted document",
+          "bg-green-600 text-white font-semibold"
+        );
+
+        const body = {
+          file: foldername,
+          split_size: 3,
+        };
+
+        const { data } = await axios.post(`${SOCKET_SERVER_URL}/index`, body);
+
+        setTaskId(data.task_id);
+      } else {
+        const { data } = await axios.delete(`${SOCKET_SERVER_URL}/files`, {
+          data: { file: name },
+        });
+        getAllUploadedFileNames();
+        toastShow(
+          "Successfully deleted document",
+          "bg-green-600 text-white font-semibold"
+        );
+      }
     } catch (error) {
       console.error("Error deleting: ", error);
       toastShow(
@@ -366,6 +413,8 @@ function Chat() {
         "bg-red-600 text-white font-semibold"
       );
     }
+
+    setTalkingTo("");
   };
 
   const groupFolderFiles = (filenames) => {
@@ -426,10 +475,10 @@ function Chat() {
               />
             </div>
             <div className="text-2xl font-semibold mt-10 mb-5">Documents</div>
-            <div className="flex">
+            <div className="flex border-b-2 border-gray-500 mb-8 py-2">
               <div
-                className="ml-5 mb-5"
-                data-tooltip-content={"Add document"}
+                className="ml-5"
+                data-tooltip-content={"Upload document"}
                 data-tooltip-id="add"
               >
                 <input
@@ -442,10 +491,10 @@ function Chat() {
                   accept=".txt,.zip,.pdf,.doc,.docx"
                   placeholder="No file selected"
                 />
-                <label htmlFor="file">
+                <label className="rounded shadow-lg border-gray-100" htmlFor="file">
                   <FontAwesomeIcon
-                    className="cursor-pointer text-xl"
-                    icon={faFileCirclePlus}
+                    className="cursor-pointer text-[25px] text-gray-500"
+                    icon={faFileUpload}
                   />
                 </label>
               </div>
@@ -510,44 +559,65 @@ function Chat() {
             )}
             {selectedFile && (
               <div className="flex justify-end items-center">
-                <div className="text-[13px] truncate">Folder to save to:</div>
-                <DropDown
-                  label={"Select a Folder to upload to"}
-                  value={folderForUpload}
-                  onChange={(e) => {
-                    setFolderForUpload(e.target.value);
-                  }}
-                  options={["Create a new folder", ...Object.keys(folderFiles)]}
-                />
-                {folderForUpload == "Create a new folder" && (
-                  <input
-                    value={newFolderName}
-                    onChange={(e) => {
-                      const text = e.target.value;
-                      const folderNameRegex = /^$|^[a-zA-Z0-9 _-]*$/;
-                      if (folderNameRegex.test(text)) {
-                        setNewFolderName(text);
-                      }
-                    }}
-                    placeholder="Enter folder name"
-                    className="text-sm border border-gray-400 py-2 px-4 rounded scale-90"
-                  />
-                )}
-                <div className="flex truncate text-sm border border-gray-400 py-2 px-4 rounded scale-90">
-                  {newFolderName
-                    ? `${newFolderName}/${selectedFile.name}`
-                    : selectedFile?.name}
-                </div>
-                <button
-                  onClick={onFileUpload}
-                  style={{ fontFamily: "Ubuntu" }}
-                  className="flex text-sm border border-gray-600 hover:text-white hover:bg-gray-900 py-2 px-4 rounded focus:outline-none focus:shadow-outline scale-90"
-                >
-                  <div className="mr-4">{uploading?'...':'upload'}</div>
-                  <div className="">
-                    <FontAwesomeIcon icon={faUpload} />
+                {!uploading ? (
+                  <>
+                    <div className="text-[13px] truncate">
+                      Folder to save to:
+                    </div>
+                    <DropDown
+                      label={"Select a Folder to upload to"}
+                      value={folderForUpload}
+                      onChange={(e) => {
+                        setFolderForUpload(e.target.value);
+                      }}
+                      options={[
+                        "Create a new folder",
+                        ...Object.keys(folderFiles),
+                      ]}
+                    />
+                    {folderForUpload == "Create a new folder" && (
+                      <input
+                        value={newFolderName}
+                        onChange={(e) => {
+                          const text = e.target.value;
+                          const folderNameRegex = /^$|^[a-zA-Z0-9 _-]*$/;
+                          if (folderNameRegex.test(text)) {
+                            setNewFolderName(text);
+                          }
+                        }}
+                        placeholder="Enter folder name"
+                        className="text-sm border border-gray-400 py-2 px-4 rounded scale-90"
+                      />
+                    )}
+                    <div className="flex truncate text-sm border border-gray-400 py-2 px-4 rounded scale-90">
+                      {newFolderName
+                        ? `${newFolderName}/${selectedFile.name}`
+                        : selectedFile?.name}
+                    </div>
+                    <button
+                      onClick={onFileUpload}
+                      style={{ fontFamily: "Ubuntu" }}
+                      className="flex text-sm border border-gray-600 hover:text-white hover:bg-gray-900 py-2 px-4 rounded focus:outline-none focus:shadow-outline scale-90"
+                    >
+                      <div className="mr-4">upload</div>
+                      <div className="">
+                        <FontAwesomeIcon icon={faUpload} />
+                      </div>
+                    </button>
+                  </>
+                ) : (
+                  <div
+                    data-tooltip-id="up"
+                    data-tooltip-content={"uploading..."}
+                  >
+                    <Loader
+                      animationName={"uploading"}
+                      width={60}
+                      height={60}
+                    />
+                    <Tooltip id="up" place={"left"} />
                   </div>
-                </button>
+                )}
               </div>
             )}
           </div>
@@ -592,50 +662,61 @@ function Chat() {
                 icon={faClose}
               />
             </div>
-            <div className="flex items-center gap-2">
-              <div style={{ fontFamily: "PoorStory" }}>Prompt</div>
-              <div className="py-1 px-4 bg-gray-100 border border-gray-300 border border-gray-300 flex-1 rounded-lg max-h-[10vh] text-wrap text-sm overflow-y-scroll">
-                {selectedMsgChunks.chunks[0].Question}
-              </div>
-            </div>
-            <div className="flex items-center justify-between mt-4 mb-2">
-              <div style={{ fontFamily: "PoorStory" }}>Chunks Retrieved</div>
-              <div className="flex gap-1">
-                {selectedMsgChunks.chunks.map((chunk, index) => (
-                  <div
-                    onClick={() => {
-                      setCurrentChunkIndex(index);
-                    }}
-                    className={`${
-                      index == currentChunkIndex
-                        ? "text-white bg-sky-600"
-                        : "text-black bg-sky-100"
-                    } flex cursor-pointer justify-center items-center w-5 h-5 text-sm rounded`}
-                  >
-                    {index + 1}
+            {selectedMsgChunks?.chunks ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <div style={{ fontFamily: "PoorStory" }}>Prompt</div>
+                  <div className="py-1 px-4 bg-gray-100 border border-gray-300 border border-gray-300 flex-1 rounded-lg max-h-[10vh] text-wrap text-sm overflow-y-scroll">
+                    {selectedMsgChunks?.chunks[0]?.Question}
                   </div>
-                ))}
-              </div>
-            </div>
-            <div className="bg-gray-100 border border-gray-300 w-full rounded max-h-[40vh] py-1 px-4 text-wrap text-sm overflow-y-scroll">
-              <div>
-                {selectedMsgChunks.chunks[currentChunkIndex]["Passage 1"]}
-              </div>
-            </div>
-            <div className="flex items-center gap-1 mt-5 justify-end font-semibold">
-              <div style={{ fontFamily: "PoorStory" }} className="text-base">
-                Relevance Score:
-              </div>
-              <div className="bg-green-700 text-white text-xs px-2 py-1 rounded">
-                <div>
-                  {parseFloat(
-                    selectedMsgChunks.chunks[currentChunkIndex][
-                      "Relevance Score 1"
-                    ]
-                  )}
                 </div>
-              </div>
-            </div>
+                <div className="flex items-center justify-between mt-4 mb-2">
+                  <div style={{ fontFamily: "PoorStory" }}>
+                    Chunks Retrieved
+                  </div>
+                  <div className="flex gap-1">
+                    {selectedMsgChunks?.chunks?.map((chunk, index) => (
+                      <div
+                        onClick={() => {
+                          setCurrentChunkIndex(index);
+                        }}
+                        className={`${
+                          index == currentChunkIndex
+                            ? "text-white bg-sky-600"
+                            : "text-black bg-sky-100"
+                        } flex cursor-pointer justify-center items-center w-5 h-5 text-sm rounded`}
+                      >
+                        {index + 1}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-gray-100 border border-gray-300 w-full rounded max-h-[40vh] py-1 px-4 text-wrap text-sm overflow-y-scroll">
+                  <div>
+                    {selectedMsgChunks?.chunks[currentChunkIndex]["Passage 1"]}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 mt-5 justify-end font-semibold">
+                  <div
+                    style={{ fontFamily: "PoorStory" }}
+                    className="text-base"
+                  >
+                    Relevance Score:
+                  </div>
+                  <div className="bg-green-700 text-white text-xs px-2 py-1 rounded">
+                    <div>
+                      {parseFloat(
+                        selectedMsgChunks?.chunks[currentChunkIndex][
+                          "Relevance Score 1"
+                        ]
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              "No chunks retrieved"
+            )}
           </div>
         </div>
       )}
@@ -688,17 +769,8 @@ function Chat() {
             <div className="ml-5 bg-white p-2 rounded-full">
               <img src={ITCLogo} className="h-10 rounded-full" />
             </div>
-            {/* <div className="bg-white ml-5 p-2 rounded-xl">
-              <img
-                src={ChangoLogo}
-                className="h-10"
-              />
-            </div> */}
-            <div
-              style={{ fontFamily: "BlackOps" }}
-              className="text-[24px] text-gray-700 ml-5 font-semibold"
-            >
-              ITC Agent
+            <div className="text-[24px] text-gray-700 ml-5 font-semibold">
+              iTC Agent
             </div>
           </div>
           <div className="flex flex-col items-center h-[85vh] w-full">
@@ -715,11 +787,13 @@ function Chat() {
                     if (message.incoming) {
                       return (
                         <BotMessage
-                          onChunksClick={() =>
+                          onChunksClick={() => {
+                            console.log(chunks[parseInt(index / 2)]);
                             setSelectedMessageChunks(
                               chunks[parseInt(index / 2)]
-                            )
-                          }
+                            );
+                          }}
+                          chunks={chunks[parseInt(index / 2)].chunks}
                           key={index}
                           message={message}
                         />
@@ -740,6 +814,7 @@ function Chat() {
               </div>
             </div>
             <MessageInput
+              onAttachClick={() => setShowDocuments(true)}
               icon={faArrowUp}
               value={message}
               disabled={typingIndicators[selectedModel]}
@@ -768,40 +843,6 @@ function Chat() {
             >
               iTC agent
             </div>
-
-            {uploading && (
-              <div
-                className={`flex font-semibold m-5 p-2 px-6 items-center border text-xs mt-20 ${
-                  uploading
-                    ? "border-amber-600 text-amber-600"
-                    : uploadSuccess
-                    ? "border-teal-700 text-teal-700"
-                    : "border-red-600 text-red-600"
-                } rounded`}
-              >
-                <div
-                  className={`${
-                    uploading ? "opacity-100" : "opacity-0"
-                  } duration-500`}
-                >
-                  {uploading
-                    ? "uploading..."
-                    : uploadSuccess
-                    ? "upload successful"
-                    : "upload failed"}
-                </div>
-              </div>
-            )}
-
-            {/* {(taskId || taskProgressDisplay == "Done") && (
-              <div
-                className={`${
-                  taskProgressDisplay == "Done" ? "opacity-0" : "opacity-100"
-                } duration-[1000ms] flex font-semibold m-5 p-2 px-6 items-center border text-xs mt-20 rounded`}
-              >
-                <div>{taskProgressDisplay}</div>
-              </div>
-            )} */}
 
             <div className={`flex m-5 mt-auto mb-10 p-2 items-center`}>
               <div
@@ -845,6 +886,7 @@ function Chat() {
                               chunks[parseInt(index / 2)]
                             )
                           }
+                          chunks={chunks[parseInt(index / 2)].chunks}
                           key={index}
                           message={message}
                         />
@@ -865,6 +907,7 @@ function Chat() {
               </div>
             </div>
             <MessageInput
+              onAttachClick={() => setShowDocuments(true)}
               icon={faArrowUp}
               value={message}
               disabled={typingIndicators[selectedModel]}

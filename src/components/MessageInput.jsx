@@ -24,15 +24,15 @@ export default function MessageInput({
           onClick={onAttachClick}
           className="flex cursor-pointer justify-center items-center w-8 h-8 rounded-lg mr-3"
         >
-          <input
+          {/* <input
             style={{ display: "none" }}
             type={"file"}
             id="file"
             onChange={onFileSelect}
-            disabled={disabled}
+            disabled={true}
             accept="application/zip application/msword application/pdf application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             placeholder="No zip file selected"
-          />
+          /> */}
           <label htmlFor="file">
             <FontAwesomeIcon
               className="text-black cursor-pointer"
